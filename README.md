@@ -1,6 +1,12 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/a3d8a40d7133497caa11051eaac6f1a2)](https://www.codacy.com/manual/kai-morich/SimpleBluetoothTerminal?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=kai-morich/SimpleBluetoothTerminal&amp;utm_campaign=Badge_Grade)
 
-# SimpleBluetoothTerminal
+# SimpleBluetoothTerminal - Arduino HMD Project
+
+This project is part of https://github.com/K-Nagai5861/BDM_HMD which implements a simple smart eyeware with Arduino Nano/Uno and 3D printers.
+
+The android app sends screenshots to the Arduino to display information.
+
+------- Original README -------
 
 This Android app provides a line-oriented terminal / console for classic Bluetooth (2.x) devices implementing the Bluetooth Serial Port Profile (SPP)
 
