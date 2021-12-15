@@ -11,8 +11,20 @@
         android:title="Newline"
         app:showAsAction="never" />
     <item
-        android:id="@+id/hex"
-        android:title="HEX Mode"
+        android:id="@+id/picture"
         android:checkable="true"
-        app:showAsAction="never" />
+        android:icon="@android:drawable/ic_menu_gallery"
+        android:title="Picture Mode"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/twitter"
+        android:checkable="true"
+        android:icon="@mipmap/twitter"
+        android:title="Twitter Mode"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/hex"
+        android:checkable="true"
+        android:title="HEX Mode"
+        app:showAsAction="never" ></item>
 </menu>

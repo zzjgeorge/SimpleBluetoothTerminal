@@ -1,5 +1,9 @@
 package de.kai_morich.simple_bluetooth_terminal;
 
+
+import static de.kai_morich.simple_bluetooth_terminal.MainActivity.mSC;
+import static de.kai_morich.simple_bluetooth_terminal.MainActivity.sMediaProjection;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
@@ -8,8 +12,13 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -21,6 +30,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -42,12 +52,14 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     private Connected connected = Connected.False;
     private boolean initialStart = true;
     private boolean hexEnabled = false;
+    private boolean invertEnabled = false;
+    public static boolean pictureEnabled = false;
     private boolean pendingNewline = false;
     private String newline = TextUtil.newline_crlf;
-
     /*
      * Lifecycle
      */
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -67,6 +79,8 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     @Override
     public void onStart() {
         super.onStart();
+        mSC = new ScreenCapturer(getActivity(), sMediaProjection, "");
+        mSC.startProjection();
         if(service != null)
             service.attach(this);
         else
@@ -169,9 +183,173 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
             sendText.setHint(hexEnabled ? "HEX mode" : "");
             item.setChecked(hexEnabled);
             return true;
+        } else if (id == R.id.twitter) {
+            invertEnabled = !invertEnabled;
+            return true;
+        }
+          else if (id == R.id.picture) {
+            if(connected != Connected.True) {
+                Toast.makeText(getActivity(), "not connected", Toast.LENGTH_SHORT).show();
+            } else {
+
+
+
+                final int interval = 2000;
+                final Handler runAtInterval = new Handler();
+                Runnable screenshotAndSend = new Runnable() {
+                    @Override
+                    public void run() {
+                        try{
+
+
+        pictureEnabled = true;
+        // split into 4 segments
+        byte bytePic[] = new byte[1024];
+        mSC.takeScreenshot();
+        encodePic(bytePic, mSC.screenshotBitmap); // tests
+        final int delayedTime = 150;
+        // send 1/4 pic per 0.15 second
+        new android.os.Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    int i1 = 0;
+                    byte parsedData[] = new byte[256+2]; // last 2 bytes for end line
+                    for(int i2=0;i2<256;i2++){
+                        parsedData[i2] = bytePic[i1*256+i2];
+                    }
+                    parsedData[256] = '\r';
+                    parsedData[257] = '\n';
+                    service.write(parsedData);
+                    receiveText.append("sending pic" + String.valueOf(i1) + "\n");
+
+                } catch (Exception e) {
+                    onSerialIoError(e);
+                }
+            }
+        }, 0);
+
+        new android.os.Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    int i1 = 1;
+                    byte parsedData[] = new byte[256+2]; // last 2 bytes for end line
+                    for(int i2=0;i2<256;i2++){
+                        parsedData[i2] = bytePic[i1*256+i2];
+                    }
+                    parsedData[256] = '\r';
+                    parsedData[257] = '\n';
+                    service.write(parsedData);
+                    receiveText.append("sending pic" + String.valueOf(i1) + "\n");
+
+                } catch (Exception e) {
+                    onSerialIoError(e);
+                }
+            }
+        }, delayedTime*1);
+
+        new android.os.Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    int i1 = 2;
+                    byte parsedData[] = new byte[256+2]; // last 2 bytes for end line
+                    for(int i2=0;i2<256;i2++){
+                        parsedData[i2] = bytePic[i1*256+i2];
+                    }
+                    parsedData[256] = '\r';
+                    parsedData[257] = '\n';
+                    service.write(parsedData);
+                    receiveText.append("sending pic" + String.valueOf(i1) + "\n");
+
+                } catch (Exception e) {
+                    onSerialIoError(e);
+                }
+            }
+        }, delayedTime*2);
+
+        new android.os.Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    int i1 = 3;
+                    byte parsedData[] = new byte[256+2]; // last 2 bytes for end line
+                    for(int i2=0;i2<256;i2++){
+                        parsedData[i2] = bytePic[i1*256+i2];
+                    }
+                    parsedData[256] = '\r';
+                    parsedData[257] = '\n';
+                    service.write(parsedData);
+                    receiveText.append("sending pic" + String.valueOf(i1) + "\n");
+
+                } catch (Exception e) {
+                    onSerialIoError(e);
+                }
+            }
+        }, delayedTime*3);
+        pictureEnabled = false;
+
+
+                        }
+                        catch(Exception e) {
+                            onSerialIoError(e);
+                        }
+                        finally{
+                            runAtInterval.postDelayed(this, interval);
+                        }
+                    }
+                };
+                runAtInterval.post(screenshotAndSend);
+            }
+            return true;
         } else {
             return super.onOptionsItemSelected(item);
         }
+    }
+
+
+
+    private void encodePic(byte[] bytePic, Bitmap screenshot) { // encode ARGB8888 bitmap into 1024 bytes
+        int[] pixels = new int[128*64];
+        Bitmap bar = Bitmap.createBitmap(screenshot, 0, 0,  screenshot.getWidth()/3, screenshot.getWidth()/3/8);
+        Bitmap barResized = Bitmap.createScaledBitmap(bar,128,16,true);
+
+//        int iconWidth = screenshot.getWidth()/5;
+//        int scrollbarWidth = screenshot.getWidth()/18;
+//        int tweetWidth = screenshot.getWidth() - iconWidth - scrollbarWidth;
+        Bitmap content = Bitmap.createBitmap(screenshot, 0, screenshot.getHeight()/4,  screenshot.getWidth(), screenshot.getWidth()/8*3);
+        Bitmap contentResized = Bitmap.createScaledBitmap(content,128,48,true);
+
+        Bitmap result = Bitmap.createBitmap(128, 64, Bitmap.Config.ARGB_8888);
+        Canvas comboImage = new Canvas(result);
+        comboImage.drawBitmap(barResized, 0, 0, null);
+        comboImage.drawBitmap(contentResized, 0, 16, null);
+        result.getPixels(pixels, 0, 128, 0, 0, 128,64);
+        for(int i1=0;i1<1024;i1++){
+            bytePic[i1] = (byte) 0;
+            for(int i2=0;i2<8;i2++){
+                // decode ARGB
+                int alpha = (pixels[i1*8+i2] >> 24) & 0xFF;
+                int red = (pixels[i1*8+i2] >> 16) & 0xFF;
+                int green = (pixels[i1*8+i2] >> 8) & 0xFF;
+                int blue = pixels[i1*8+i2] & 0xFF;
+                if(invertEnabled){
+                    if((red+green+blue)/3 < 0xF0)
+                        bytePic[i1] |= (1 << (7-i2));
+                }
+                else{
+                    if((red+green+blue)/3 > 0xF0)
+                        bytePic[i1] |= (1 << (7-i2));
+                }
+
+            }
+        }
+        bar.recycle();
+        barResized.recycle();
+        content.recycle();
+        contentResized.recycle();
+        result.recycle();
     }
 
     /*
